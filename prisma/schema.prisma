@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum GoalType {
+  FAT_LOSS
+  RECOMP
+  LEAN_BULK
+  STRENGTH
+}
+
+model UserProfile {
+  id                Int      @id @default(1)
+  name              String
+  dob               DateTime
+  sex               Sex?
+  onboardingDone    Boolean  @default(false)
+  activityLevel     String?
+  workoutFrequency  Int?
+  stepsTarget       Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  onboardingGoal    OnboardingGoal?
+  weeklyTargets     WeeklyTarget[]
+  dailyLogs         DailyLog[]
+  workouts          Workout[]
+  workoutSessions   WorkoutSession[]
+  measurements      Measurement[]
+  photos            ProgressPhoto[]
+}
+
+model OnboardingGoal {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  goalType           GoalType?
+  bodyFatRange       String?
+  targetWeight       Float?
+  targetBodyFat      Float?
+  targetWaist        Float?
+  activityLevel      String?
+  workoutFrequency   Int?
+  suggestedSteps     Int?
+  updatedAt          DateTime @updatedAt
+  user               UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyTarget {
+  id                    Int      @id @default(autoincrement())
+  userId                Int
+  weekStart             DateTime
+  stepsPerDay           Int      @default(8000)
+  caloriesPerDay        Int      @default(2200)
+  proteinPerDay         Int      @default(140)
+  sleepHoursPerDay      Float    @default(7.5)
+  waterLitersPerDay     Float    @default(2.5)
+  fiberPerDay           Int      @default(25)
+  trainingDaysPerWeek   Int      @default(3)
+  zone2MinutesPerWeek   Int      @default(90)
+  mobilityMinutesPerWeek Int     @default(60)
+  createdAt             DateTime @default(now())
+  user                  UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLogs             DailyLog[]
+
+  @@unique([userId, weekStart])
+}
+
+model DailyLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  date         DateTime @unique
+  weekId       Int?
+  steps        Int?
+  calories     Int?
+  protein      Int?
+  sleepHours   Float?
+  waterLiters  Float?
+  fiber        Int?
+  weight       Float?
+  trainingDone Boolean  @default(false)
+  zone2Minutes Int?
+  mobilityMinutes Int?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  week         WeeklyTarget? @relation(fields: [weekId], references: [id])
+  workoutAssignment WorkoutAssignment?
+}
+
+model Workout {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   Exercise[]
+  assignments WorkoutAssignment[]
+  sessions    WorkoutSession[]
+}
+
+model Exercise {
+  id                Int      @id @default(autoincrement())
+  workoutId         Int
+  name              String
+  warmupGuidance    String?
+  workingSets       Int      @default(3)
+  repRange          String?
+  earlySetRpe       Float?
+  lastSetRpe        Float?
+  intensityTechnique String?
+  restSeconds       Int?
+  notes             String?
+  substitutionOne   String?
+  substitutionTwo   String?
+  youtubeLinks      String?
+  orderIndex        Int      @default(0)
+  workout           Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  setLogs           ExerciseSetLog[]
+}
+
+model WorkoutAssignment {
+  id        Int      @id @default(autoincrement())
+  workoutId Int
+  dailyLogId Int     @unique
+  createdAt DateTime @default(now())
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  dailyLog  DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+}
+
+model WorkoutSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  workoutId Int
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  setLogs   ExerciseSetLog[]
+}
+
+model ExerciseSetLog {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int
+  exerciseId  Int
+  setNumber   Int
+  weight      Float?
+  reps        Int?
+  rpe         Float?
+  notes       String?
+  createdAt   DateTime @default(now())
+  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+}
+
+model Measurement {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime
+  weight    Float?
+  waist     Float?
+  chest     Float?
+  arms      Float?
+  thighs    Float?
+  neck      Float?
+  hips      Float?
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model ProgressPhoto {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime
+  frontUrl  String?
+  sideUrl   String?
+  backUrl   String?
+  createdAt DateTime @default(now())
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
