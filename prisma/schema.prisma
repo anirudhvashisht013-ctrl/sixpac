@@ -7,24 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Sex {
-  MALE
-  FEMALE
-  OTHER
-}
+// Enums removed because the current connector (sqlite) doesn't support native enums.
+// Store these values as strings and validate them in application code.
 
-enum GoalType {
-  FAT_LOSS
-  RECOMP
-  LEAN_BULK
-  STRENGTH
-}
 
 model UserProfile {
-  id                Int      @id @default(1)
+  id                Int      @id @default(autoincrement())
   name              String
   dob               DateTime
-  sex               Sex?
+  sex               String?
   onboardingDone    Boolean  @default(false)
   activityLevel     String?
   workoutFrequency  Int?
@@ -43,7 +34,7 @@ model UserProfile {
 model OnboardingGoal {
   id                 Int      @id @default(autoincrement())
   userId             Int      @unique
-  goalType           GoalType?
+  goalType           String?
   bodyFatRange       String?
   targetWeight       Float?
   targetBodyFat      Float?
@@ -192,5 +183,4 @@ model ProgressPhoto {
   createdAt DateTime @default(now())
   user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, date])
 }
